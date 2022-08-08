@@ -43,15 +43,12 @@ class BERTLM(nn.Module):
         self.bert = bert
 
         # linear layer for Language Model Prediction
-        self.NextSentencePrediction = nn.Linear(self.bert.hidden_size, 2)
-        self.MaskedLanguageModel = nn.Linear(self.bert.hidden_size, vocab_size)
-
-        self.next_sentence = self.NextSentencePrediction(self.bert.hidden_size)
-        self.mask_lm = self.MaskedLanguageModel(self.bert.hidden_size, vocab_size)
+        self.next_sentence = nn.Linear(self.bert.hidden_size, 2)
+        self.mask_lm = nn.Linear(self.bert.hidden_size, vocab_size)
 
     def forward(self, inputs, positions, segments):
         x = self.bert(inputs, positions, segments)
-        return self.next_sentence(x), self.mask_lm(x)
+        return self.next_sentence(x[:, 0]), self.mask_lm(x)
 
 
 
