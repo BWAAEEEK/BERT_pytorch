@@ -19,15 +19,17 @@ class BERT(nn.Module):
             nn.TransformerEncoderLayer(
                 d_model=self.hidden_size,
                 nhead=args.attn_heads,
-                dim_feedforward=self.hidden_size * 4
+                dim_feedforward=self.hidden_size * 4,
+                batch_first=True,
+                activation="gelu"
             ),
             num_layers=args.transformer_layers
         )
 
-    def forward(self, inputs, positions, segments):
+    def forward(self, inputs, positions, segments, attn_mask):
         x = self.tok_emb(inputs), self.pos_emb(positions) + self.seg_emb(segments)
         x = nn.Dropout(p=0.1)(x)
-        x = self.transformer_encoder(x)
+        x = self.transformer_encoder(x, src_key_padding_mask=attn_mask)
 
         return x
 
@@ -46,9 +48,9 @@ class BERTLM(nn.Module):
         self.next_sentence = nn.Linear(self.bert.hidden_size, 2)
         self.mask_lm = nn.Linear(self.bert.hidden_size, vocab_size)
 
-    def forward(self, inputs, positions, segments):
-        x = self.bert(inputs, positions, segments)
-        return self.next_sentence(x[:, 0]), self.mask_lm(x)
+    def forward(self, inputs, positions, segments, attn_mask):
+        x = self.bert(inputs, positions, segments, attn_mask)
+        return self.next_sentence(x[:, 0, :]), self.mask_lm(x)
 
 
 
